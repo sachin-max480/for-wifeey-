@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#070d33">
+<title>The Little Game of Us 💙</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,500&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+:root{--lav:#b8a9ff;--blue:#7fb2ff;--pink:#ffc2ea;--mint:#7ef0c1;--rose:#ff9cc4}
+body{
+  font-family:'Quicksand',system-ui,-apple-system,'Segoe UI',sans-serif;
+  color:#eaf0ff;overflow:hidden;
+  background:radial-gradient(120% 90% at 50% -10%,#24338f 0%,#101a5a 35%,#070d33 70%,#030618 100%);
+}
+#sky{position:fixed;inset:0;z-index:0}
+.aurora{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+   radial-gradient(40% 30% at 18% 82%,rgba(160,130,255,.24),transparent 70%),
+   radial-gradient(35% 30% at 85% 18%,rgba(90,150,255,.22),transparent 70%),
+   radial-gradient(30% 25% at 60% 60%,rgba(255,170,230,.08),transparent 70%);
+  animation:drift 18s ease-in-out infinite alternate}
+@keyframes drift{to{transform:translate3d(-2%,2%,0) scale(1.07)}}
+.moon{position:fixed;z-index:0;top:11%;right:9%;width:64px;height:64px;border-radius:50%;
+  box-shadow:16px 8px 0 0 #f3ecff;filter:drop-shadow(0 0 18px rgba(200,190,255,.55));
+  opacity:.8;pointer-events:none;animation:floaty 7s ease-in-out infinite}
+@media(max-width:600px){.moon{width:40px;height:40px;box-shadow:10px 5px 0 0 #f3ecff;top:15%}}
+
+#app{position:relative;z-index:2;height:100vh;height:100dvh;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden}
+
+/* HUD */
+#hud{padding:14px 70px 6px 18px;transition:.5s;max-width:700px;width:100%;margin:0 auto}
+body:not(.playing) #hud{opacity:0;pointer-events:none;transform:translateY(-12px)}
+.hud-row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:700;font-size:14px;letter-spacing:.3px}
+#lvLabel{color:#cfc6ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip{background:rgba(255,255,255,.1);border:1px solid rgba(190,180,255,.3);padding:5px 12px;border-radius:999px;white-space:nowrap}
+.chip.pop{animation:pop .45s}
+.bar{height:9px;border-radius:99px;background:rgba(255,255,255,.1);margin-top:9px;overflow:hidden}
+#barFill{height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#8d7bff,#7fb2ff,#ffc2ea);box-shadow:0 0 14px rgba(150,140,255,.9);transition:width .7s cubic-bezier(.2,.8,.2,1)}
+
+#mute{position:fixed;top:12px;right:14px;z-index:30;width:42px;height:42px;border-radius:50%;border:1px solid rgba(190,180,255,.35);
+  background:rgba(255,255,255,.1);color:#fff;font-size:18px;cursor:pointer;backdrop-filter:blur(8px);transition:.2s}
+#mute:hover{transform:scale(1.1);background:rgba(160,150,255,.3)}
+
+#stage{flex:1;display:flex;align-items:center;justify-content:center;padding:10px 16px 34px}
+.scene{width:100%;max-width:640px;animation:sceneIn .65s cubic-bezier(.2,.8,.2,1) both}
+.scene.leave{animation:sceneOut .28s ease-in both}
+@keyframes sceneIn{from{opacity:0;transform:translateY(26px) scale(.97);filter:blur(7px)}to{opacity:1;transform:none;filter:none}}
+@keyframes sceneOut{to{opacity:0;transform:translateY(-16px) scale(.98);filter:blur(7px)}}
+
+.card{background:linear-gradient(160deg,rgba(255,255,255,.13),rgba(255,255,255,.04));
+  border:1px solid rgba(190,180,255,.28);border-radius:28px;padding:30px 24px;text-align:center;
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  box-shadow:0 24px 70px rgba(4,8,50,.6),inset 0 1px 0 rgba(255,255,255,.22)}
+h1,h2{font-family:'Playfair Display',Georgia,serif;margin:.25em 0;line-height:1.15}
+h1{font-size:clamp(34px,8vw,56px);background:linear-gradient(90deg,#d5ccff,#9cc4ff,#ffd1f0);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 18px rgba(160,150,255,.45))}
+h2{font-size:clamp(22px,4.6vw,30px)}
+p{margin:.5em 0;line-height:1.55}
+.script{font-family:'Dancing Script',cursive;font-size:clamp(26px,6vw,36px);color:#d6caff;margin:.1em 0 .4em}
+.eyebrow{font-size:12px;letter-spacing:2.5px;text-transform:uppercase;color:#aeb9ff;font-weight:700}
+.small{font-size:14px;color:#bcc6f5}
+.big-emoji{font-size:58px;animation:floaty 3.5s ease-in-out infinite;filter:drop-shadow(0 0 18px rgba(190,170,255,.7))}
+@keyframes floaty{50%{transform:translateY(-10px)}}
+
+.btn{display:inline-block;margin-top:18px;padding:14px 30px;border:none;border-radius:999px;cursor:pointer;
+  font:inherit;font-weight:700;font-size:17px;color:#0b1445;
+  background:linear-gradient(135deg,#d3c8ff,#9ec3ff 60%,#ffd1f0);
+  box-shadow:0 8px 28px rgba(140,130,255,.55),inset 0 1px 0 rgba(255,255,255,.7);transition:transform .2s,box-shadow .2s}
+.btn:hover{transform:translateY(-3px) scale(1.04);box-shadow:0 14px 36px rgba(140,130,255,.75)}
+.btn:active{transform:scale(.97)}
+.btn[hidden]{display:none}
+.btn.big{font-size:20px;padding:16px 38px;animation:glowpulse 2.4s ease-in-out infinite}
+.btn.ghost{background:rgba(255,255,255,.1);color:#eaf0ff;border:1px solid rgba(190,180,255,.4);box-shadow:none}
+@keyframes glowpulse{50%{box-shadow:0 8px 44px rgba(190,170,255,.95),0 0 60px rgba(150,180,255,.5)}}
+
+/* Questions */
+.qmeta{display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:#aeb9ff;letter-spacing:.5px}
+.qtext{font-family:'Playfair Display',Georgia,serif;font-size:clamp(20px,4.4vw,27px);line-height:1.3;margin:16px 0 14px;font-weight:600}
+.opts{text-align:left}
+.opt{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:14px 16px;margin:10px 0;border-radius:18px;
+  border:1px solid rgba(190,180,255,.3);background:rgba(255,255,255,.06);color:inherit;font:inherit;font-weight:600;
+  font-size:clamp(15px,2.6vw,18px);cursor:pointer;transition:transform .2s,background .2s,box-shadow .2s,opacity .3s}
+.opt:hover:not(:disabled){transform:translateY(-2px) scale(1.012);background:rgba(160,150,255,.22);box-shadow:0 8px 26px rgba(120,110,255,.35)}
+.opt:disabled{cursor:default}
+.badge{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:14px;
+  background:linear-gradient(135deg,#c6b9ff,#82b4ff);color:#0b1445}
+.opt.correct{background:rgba(126,240,193,.17);border-color:var(--mint);box-shadow:0 0 26px rgba(126,240,193,.45);animation:pop .5s}
+.opt.wrong{background:rgba(255,156,196,.15);border-color:var(--rose);animation:shake .5s}
+.opt.dim{opacity:.4}
+.fb{min-height:26px;margin-top:10px;font-weight:700;font-size:clamp(15px,2.8vw,18px);opacity:0;transform:translateY(8px);transition:.4s}
+.fb.show{opacity:1;transform:none}
+.fb.ok{color:#a8ffdc}.fb.no{color:#ffc3dc}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.07)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+
+/* score ring */
+.ring{--p:0;width:170px;height:170px;border-radius:50%;margin:14px auto;display:grid;place-items:center;
+  background:conic-gradient(#a99bff calc(var(--p)*1%),rgba(255,255,255,.1) 0);filter:drop-shadow(0 0 22px rgba(150,140,255,.7))}
+.ring>div{width:136px;height:136px;border-radius:50%;background:#0c1550;display:grid;place-items:center;font-family:'Playfair Display',serif;font-size:42px;font-weight:700}
+.ring small{display:block;font-family:'Quicksand';font-size:13px;color:#aeb9ff;font-weight:600;margin-top:-6px}
+
+/* effects */
+.fx{position:fixed;pointer-events:none;z-index:60;transform:translate(-50%,-50%);animation:fxfly 1.15s ease-out forwards}
+@keyframes fxfly{0%{opacity:1;transform:translate(-50%,-50%) scale(.3)}100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1.25) rotate(var(--r))}}
+.heart{position:fixed;bottom:-40px;z-index:1;pointer-events:none;animation:rise linear forwards;opacity:.85;filter:drop-shadow(0 0 8px rgba(255,170,230,.7))}
+@keyframes rise{0%{transform:translate(0,0) rotate(0)}100%{transform:translate(var(--sx),-115vh) rotate(var(--rot));opacity:0}}
+
+/* ending */
+.endwrap{min-height:60vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:26px;padding:10px}
+.endwrap p{margin:0;opacity:0;filter:blur(10px);transform:translateY(12px);transition:opacity 2s ease,filter 2s ease,transform 2s ease;
+  font-family:'Playfair Display',Georgia,serif;font-style:italic;font-size:clamp(21px,4.8vw,32px);line-height:1.4;color:#e6e0ff;text-shadow:0 0 24px rgba(170,160,255,.6)}
+.endwrap p.show{opacity:1;filter:none;transform:none}
+.endwrap p.last{font-size:clamp(25px,6vw,40px);color:#fff;text-shadow:0 0 30px rgba(190,170,255,.95),0 0 60px rgba(150,180,255,.6)}
+.skip{position:fixed;bottom:16px;right:18px;background:none;border:none;color:#9aa7e8;font:inherit;font-size:13px;cursor:pointer;opacity:.7}
+.skip:hover{opacity:1}
+.letter{text-align:left;padding:34px 28px}
+.letter h2{text-align:center;font-size:clamp(26px,6vw,36px);background:linear-gradient(90deg,#d5ccff,#ffd1f0);-webkit-background-clip:text;background-clip:text;color:transparent}
+.letter .date{text-align:center;font-family:'Dancing Script',cursive;font-size:22px;color:#c9bdff;margin-bottom:14px}
+.letter p.l{opacity:0;animation:fadeUp 1.2s ease forwards;font-size:clamp(16px,2.9vw,18.5px);line-height:1.75;color:#eaf0ff}
+.letter .key{font-family:'Playfair Display',serif;font-style:italic;font-size:clamp(19px,3.6vw,23px);text-align:center;color:#fff;text-shadow:0 0 20px rgba(190,170,255,.8)}
+.letter .sign{text-align:right;font-family:'Dancing Script',cursive;font-size:28px;color:#d6caff}
+.btnrow{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;opacity:0;animation:fadeUp 1s ease forwards}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<canvas id="sky"></canvas>
+<div class="aurora"></div>
+<div class="moon"></div>
+<button id="mute" aria-label="Toggle sound" title="Sound on/off">🔊</button>
+<div id="app">
+  <div id="hud">
+    <div class="hud-row"><span id="lvLabel"></span><span class="chip" id="scoreChip">💙 <span id="score">0</span></span></div>
+    <div class="bar"><div id="barFill"></div></div>
+  </div>
+  <main id="stage"></main>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* =====================================================
+   GAME CONTENT (everything here comes from your answers)
+   In each question the FIRST option is the correct one;
+   options get shuffled when the game runs.
+   ===================================================== */
+const GIRL = "wifeey";
+
+const RIGHT = ["Correct! Someone's been paying attention 😌","YESSS! 💙","Look at you go, wifeey! ✨","Obviously. Genius behaviour 🌙","That's my girl! 🥰"];
+const WRONG = ["Hehe, nope! But I still love you 💙","Plot twist: wrong! No penalty, only cuddles 🫶","Oof! I forgive you instantly 😌","Wrong, but you're cute so it's fine ✨","Not this time, but I'm not mad 🥺"];
+
+const LEVELS = [
+ { name:"Remember When?", icon:"🌧️", sub:"Back to where it all began…",
+   done:["Flawless memory! 😍","Not bad at all, wifeey 😌","Cute attempt! The story's still ours 💙"],
+   qs:[
+    { q:"When did our little story officially begin?",
+      o:["November 26, 2024","February 14, 2025","December 25, 2024","The day GTA 6 comes out"],
+      right:"November 26, 2024. The best date ever 💙", wrong:"It was November 26, 2024. Remember that date, wifeey! 😌" },
+    { q:"What was the weather like on the day we first met?",
+      o:["Rainy and cold 🌧️","Burning hot ☀️","Snowing ❄️","A full tornado 🌪️"],
+      right:"Rainy and cold. Basically a movie scene 🌧️🎬", wrong:"Rainy and cold! Very cinematic 🌧️" },
+    { q:"What colour were our school uniforms when we met?",
+      o:["Brown 🤎","Pink","Neon green","Full Batman suit"],
+      right:"Brown uniforms, forever 🤎", wrong:"Brown! Cutest uniforms ever 🤎" },
+    { q:"Who said \"I like u\" first?",
+      o:["You did, wifeey 😌","Me","A random pigeon","Both at the exact same time"],
+      right:"You did! The brave one 😌 I'm still blushing", wrong:"It was YOU! Brave wifeey made the first move 😌" }
+   ]},
+ { name:"Only We Know", icon:"🌙", sub:"Inside jokes, midnight calls and questionable violence.",
+   done:["Okay you really know us 😭💙","Pretty good, wifeey! 😌","Some of these were tricky… I still love you 💙"],
+   qs:[
+    { q:"When you said \"I like u\", what did I reply?",
+      o:["Me too","Who is this?","Let me think about it","Sorry, wrong number"],
+      right:"\"Me too.\" Best two words I ever said 💙", wrong:"It was \"me too\"! Obviously 🥰" },
+    { q:"What was the first thing I said when I saw you in that yellow dress?",
+      o:["Wow","Nice weather today","Did you eat?","Hello, madam"],
+      right:"WOW. And I'd say it again 💛", wrong:"It was \"wow\"! I was speechless 💛" },
+    { q:"Our midnight calls started at 10 PM. When did they end?",
+      o:["5 in the morning","11 PM","Midnight sharp","Next day noon"],
+      right:"5 AM! Who needs sleep 😴🌙", wrong:"5 AM! We were absolute legends 🌙" },
+    { q:"Who discovered our secret midnight calls and ended that era?",
+      o:["Your parents 😭","My parents","The network","A ghost"],
+      right:"Your parents! The end of an era 😭🕊️", wrong:"Your parents! RIP midnight calls 😭" },
+    { q:"After I rage baited you SO badly, what did you throw at me?",
+      o:["A pouch","A slipper","A pillow","Your whole bag"],
+      right:"A POUCH! Direct hit 🎯😭", wrong:"A pouch! I still remember it 🎯😭" },
+    { q:"When wifeey is annoyed, what does she say?",
+      o:["\"i hate u\"","\"Please excuse me, sir\"","\"I'm so proud of you\"","\"Have a nice day\""],
+      right:"\"i hate u\". Classic 😌", wrong:"It's always \"i hate u\" 😂💙" }
+   ]},
+ { name:"Guess What I'm Thinking", icon:"💭", sub:"A peek inside my brain. It's a little chaotic in here.",
+   done:["You can read my mind 🔮","Good guessing, wifeey 😌","My brain is confusing, I get it 😅"],
+   qs:[
+    { q:"What's my favourite song?",
+      o:["Annul Melae (Harris Jayaraj)","Why This Kolaveri Di","Happy Birthday","Baby Shark"],
+      right:"\"Annul Melae\" 🎶 Perfect taste", wrong:"\"Annul Melae\" by Harris Jayaraj 🎶 Go listen right now" },
+    { q:"What's my favourite video game?",
+      o:["GTA 6","Minecraft","Subway Surfers","Among Us"],
+      right:"GTA 6! Obviously 🎮", wrong:"GTA 6! Come on, wifeey 🎮😂" },
+    { q:"What's my dream car?",
+      o:["Mercedes-Benz G63","Auto rickshaw","Tata Nano","A bicycle with a basket"],
+      right:"The G63! One day, wifeey 🚙✨", wrong:"The G63! One day you'll ride in it 🚙✨" },
+    { q:"What's my favourite thing to do with wifeey?",
+      o:["Getting beaten up by her 😭","Long peaceful walks","Cooking together","Studying quietly"],
+      right:"Facts. I literally enjoy it 😭", wrong:"Getting beaten up by you. Yes, really 😭" }
+   ]},
+ { name:"How Well Do You Know Me?", icon:"🪞", sub:"Things only my wifeey should know.",
+   done:["You know me better than I do 💙","Solid! Almost there 😌","I'll teach you the rest, don't worry 😘"],
+   qs:[
+    { q:"What's my nickname?",
+      o:["Slave","Boss","Prince","King Kong"],
+      right:"Slave! Reporting for duty 🫡", wrong:"It's \"slave\". Say it with love 😌" },
+    { q:"What's my favourite thing about you?",
+      o:["You're sweet and caring to me","Your cooking","How fast you walk","Your Wi-Fi password"],
+      right:"Sweet and caring 🥹 Still my favourite", wrong:"How sweet and caring you are to me 🥹💙" },
+    { q:"What do you like most about the way I am with you?",
+      o:["Gentle and mature","Loud and chaotic","Extremely lazy","Rage baiting you all day"],
+      right:"Gentle and mature (when I'm not rage baiting you 😅)", wrong:"Gentle and mature! I try 😅💙" },
+    { q:"Which of these does wifeey NEVER say?",
+      o:["\"Good evening sir, how may I assist you?\"","\"i love you sm\"","\"u so hott\"","\"ur the best hon\""],
+      right:"Correct! The others? 100% you 😌", wrong:"That one's real! The formal line is the fake 😂" }
+   ]},
+ { name:"The Final Challenge", icon:"💫", sub:"The ones that matter most.",
+   done:["You passed with love 💙","Beautiful, wifeey 🥹","Every answer was perfect to me 💙"],
+   qs:[
+    { q:"Every time I felt low, got scolded by my parents or felt ignored by my friends, who stayed with me?",
+      o:["You, wifeey 💙","A random pigeon","My G63 (in my dreams)","Harris Jayaraj"],
+      right:"You. Only you. Thank you for always staying 💙", wrong:"It was YOU. You stayed every single time 🥹💙" },
+    { q:"Today is our ___ anniversary!",
+      o:["2nd 🎉","1st","50th","Wait, we have an anniversary?!"],
+      right:"Two years, wifeey! 🎉💙", wrong:"Two years today! 🎉💙" },
+    { q:"In every version of this little game, who would I choose?",
+      o:["You","Wifeey","My girlfriend","The one who threw the pouch"], all:true,
+      right:"Every answer is correct. It's always you 💙" }
+   ]}
+];
+
+/* ===== EDIT YOUR SECRET LETTER HERE ===== */
+const LETTER = {
+  title: "Happy 2nd Anniversary, wifeey 💙",
+  date: "November 26, 2024 → forever",
+  paras: [
+    "It started on a rainy, cold day at school, both of us in our brown uniforms. You were the brave one. You said \"I like u\" first, and I said \"me too.\" I've meant it every single day since.",
+    "Then came the yellow dress. One look and all I could say was \"wow.\" (Still the right word, by the way.)",
+    "Then the midnight calls, from 10 at night until 5 in the morning, for two whole weeks, until your parents found out. Worth every sleepless minute. 😌",
+    "Thank you for every \"aww\" and every \"i love you sm\". And yes, even for the \"i hate u\", the \"eruma maadu\", and the pouch you threw at me. I rage baited you, I had it coming. And honestly, getting beaten up by you is still my favourite thing to do. 😭",
+    "But what I'll never forget is this: every time I felt low, every time my parents scolded me, every time my friends ignored me, you were the only one who stayed. That's why your sweetness and care is my favourite thing about you. I'll keep trying to be the gentle, mature one you like.",
+    "So no matter what your score was today, here's the truth:"
+  ],
+  key: "I'd still choose you in every version of this little game.",
+  sign: "Happy anniversary, wifeey. I love you. 💙<br>Your slave"
+};
+
+/* =====================================================
+   ENGINE
+   ===================================================== */
+const $ = s => document.querySelector(s);
+const stage = $('#stage');
+const rand = a => a[Math.floor(Math.random()*a.length)];
+const shuffle = a => { a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const TOTAL = LEVELS.reduce((n,l)=>n+l.qs.length,0);
+const LET = ['A','B','C','D','E'];
+
+let S = {lv:0,qi:0,score:0,lvScore:0,streak:0,done:0,cur:null};
+let endTok = 0, heartTimer = null, padTimer = null;
+
+/* ---------- Sound ---------- */
+let ac = null, muted = false;
+try { muted = localStorage.getItem('lgou-muted') === '1'; } catch(e){}
+function initAudio(){
+  if(!ac){ try{ ac = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+  if(ac && ac.state==='suspended') ac.resume();
+}
+function tone(f,d=.15,type='sine',v=.07,delay=0){
+  if(muted||!ac) return;
+  const t=ac.currentTime+delay, o=ac.createOscillator(), g=ac.createGain();
+  o.type=type; o.frequency.setValueAtTime(f,t);
+  g.gain.setValueAtTime(.0001,t);
+  g.gain.exponentialRampToValueAtTime(v,t+.03);
+  g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t+d+.05);
+}
+const sfx = {
+  click(){ tone(740,.07,'triangle',.06); },
+  good(){ [523.25,659.25,783.99,1046.5].forEach((f,i)=>tone(f,.3,'sine',.08,i*.07)); },
+  oops(){ tone(392,.2,'sine',.06); tone(311,.3,'sine',.06,.14); },
+  level(){ [392,523.25,659.25,783.99,1046.5,1318.5].forEach((f,i)=>tone(f,.45,'triangle',.07,i*.09)); },
+  chime(){ tone(880,1.3,'sine',.05); tone(1318.5,1.8,'sine',.035,.12); }
+};
+function startPad(){
+  stopPad();
+  const chords=[[220,261.6,329.6],[174.6,220,261.6],[261.6,329.6,392],[196,246.9,293.7]]; let i=0;
+  const play=()=>{ chords[i++%4].forEach(f=>tone(f,3.8,'sine',.022)); };
+  play(); padTimer=setInterval(play,3300);
+}
+function stopPad(){ clearInterval(padTimer); padTimer=null; }
+function paintMute(){ $('#mute').textContent = muted ? '🔇' : '🔊'; }
+$('#mute').addEventListener('click',()=>{
+  initAudio(); muted=!muted; try{localStorage.setItem('lgou-muted',muted?'1':'0');}catch(e){}
+  paintMute(); if(!muted) sfx.click();
+});
+paintMute();
+
+/* ---------- Sky canvas ---------- */
+const cv=$('#sky'), cx=cv.getContext('2d');
+let W,H,DPR,stars=[],motes=[],shooters=[],nextShoot=3000;
+function newMote(init){
+  return {x:Math.random()*W,y:init?Math.random()*H:H+20,r:Math.random()*3+1,vy:Math.random()*.35+.1,vx:(Math.random()-.5)*.25,
+          a:Math.random()*.4+.15,ph:Math.random()*6.28,c:Math.random()<.5?'184,169,255':'127,178,255'};
+}
+function resize(){
+  DPR=Math.min(window.devicePixelRatio||1,2); W=window.innerWidth; H=window.innerHeight;
+  cv.width=W*DPR; cv.height=H*DPR; cv.style.width=W+'px'; cv.style.height=H+'px'; cx.setTransform(DPR,0,0,DPR,0,0);
+  const n=Math.floor(W*H/5200);
+  stars=Array.from({length:n},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.3+.25,p:Math.random()*6.28,s:Math.random()*1.6+.4,g:Math.random()<.1}));
+  motes=Array.from({length:Math.min(42,Math.floor(W/24))},()=>newMote(true));
+}
+function frame(t){
+  cx.clearRect(0,0,W,H);
+  for(const s of stars){
+    const a=.35+.65*(.5+.5*Math.sin(t*.001*s.s+s.p));
+    cx.globalAlpha=a; cx.fillStyle=s.g?'#dcd3ff':'#fff';
+    if(s.g){ cx.shadowBlur=10; cx.shadowColor='#b8a9ff'; }
+    cx.beginPath(); cx.arc(s.x,s.y,s.g?s.r+.5:s.r,0,6.283); cx.fill();
+    if(s.g) cx.shadowBlur=0;
+  }
+  cx.globalAlpha=1;
+  for(const m of motes){
+    m.y-=m.vy; m.x+=m.vx+Math.sin(t*.0008+m.ph)*.15;
+    if(m.y<-20){ Object.assign(m,newMote(false)); }
+    const g=cx.createRadialGradient(m.x,m.y,0,m.x,m.y,m.r*5);
+    g.addColorStop(0,`rgba(${m.c},${m.a})`); g.addColorStop(1,`rgba(${m.c},0)`);
+    cx.fillStyle=g; cx.beginPath(); cx.arc(m.x,m.y,m.r*5,0,6.283); cx.fill();
+  }
+  if(t>nextShoot){
+    shooters.push({x:Math.random()*W*.8+W*.1,y:Math.random()*H*.35,vx:7+Math.random()*4,vy:3+Math.random()*2,l:1});
+    nextShoot=t+6000+Math.random()*6000;
+  }
+  shooters=shooters.filter(s=>s.l>0);
+  for(const s of shooters){
+    s.x+=s.vx; s.y+=s.vy; s.l-=.014;
+    const g=cx.createLinearGradient(s.x,s.y,s.x-s.vx*9,s.y-s.vy*9);
+    g.addColorStop(0,`rgba(255,255,255,${s.l})`); g.addColorStop(1,'rgba(255,255,255,0)');
+    cx.strokeStyle=g; cx.lineWidth=2; cx.beginPath(); cx.moveTo(s.x,s.y); cx.lineTo(s.x-s.vx*9,s.y-s.vy*9); cx.stroke();
+  }
+  requestAnimationFrame(frame);
+}
+window.addEventListener('resize',resize); resize(); requestAnimationFrame(frame);
+
+/* ---------- Effects ---------- */
+function burst(x,y,emojis,n=16){
+  for(let i=0;i<n;i++){
+    const e=document.createElement('span'); e.className='fx'; e.textContent=rand(emojis);
+    const a=Math.random()*6.283, d=70+Math.random()*130;
+    e.style.left=x+'px'; e.style.top=y+'px';
+    e.style.setProperty('--dx',Math.cos(a)*d+'px'); e.style.setProperty('--dy',(Math.sin(a)*d-70)+'px');
+    e.style.setProperty('--r',(Math.random()*120-60)+'deg'); e.style.fontSize=(15+Math.random()*18)+'px';
+    document.body.appendChild(e); setTimeout(()=>e.remove(),1250);
+  }
+}
+function confetti(n=3){
+  for(let k=0;k<n;k++) setTimeout(()=>burst(innerWidth*(.2+Math.random()*.6),innerHeight*(.25+Math.random()*.3),['💙','✨','💫','🌙','⭐','💜','🩵'],18),k*220);
+}
+function startHearts(){
+  stopHearts();
+  heartTimer=setInterval(()=>{
+    const h=document.createElement('span'); h.className='heart'; h.textContent=rand(['💙','💜','🩵','✨','💫']);
+    h.style.left=Math.random()*100+'vw'; h.style.fontSize=(14+Math.random()*20)+'px';
+    h.style.setProperty('--sx',(Math.random()*120-60)+'px'); h.style.setProperty('--rot',(Math.random()*80-40)+'deg');
+    h.style.animationDuration=(7+Math.random()*6)+'s';
+    document.body.appendChild(h); setTimeout(()=>h.remove(),14000);
+  },650);
+}
+function stopHearts(){ clearInterval(heartTimer); heartTimer=null; }
+
+/* ---------- Rendering ---------- */
+function render(html){
+  return new Promise(res=>{
+    const old=stage.querySelector('.scene');
+    const swap=()=>{ stage.innerHTML='<div class="scene">'+html+'</div>'; $('#app').scrollTo(0,0); res(); };
+    if(old){ old.classList.add('leave'); setTimeout(swap,280); } else swap();
+  });
+}
+function hud(){
+  const L=LEVELS[S.lv];
+  $('#lvLabel').textContent = `${L.icon} Level ${S.lv+1} · ${L.name}`;
+  $('#score').textContent = S.score;
+  $('#barFill').style.width = (S.done/TOTAL*100)+'%';
+}
+function pulseScore(){ const c=$('#scoreChip'); c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); }
+
+/* ---------- Screens ---------- */
+function intro(){
+  document.body.classList.remove('playing','ending');
+  stopHearts(); stopPad(); endTok++;
+  render(`
+   <div class="card">
+     <div class="big-emoji">🌙</div>
+     <p class="eyebrow">Two years · Nov 26, 2024 → Nov 26, 2026</p>
+     <h1>The Little Game of Us</h1>
+     <p class="script">How well do you know us?</p>
+     <p class="small">5 levels · wrong answers only get cuddles 🫶</p>
+     <p>Made with love, for my wifeey 💙</p>
+     <button class="btn big" data-act="start" data-primary>Start Playing ✨</button>
+     <p class="small" style="margin-top:18px">Best with sound on 🎧 (speaker button = mute)</p>
+   </div>`);
+}
+function levelIntro(){
+  S.qi=0; S.lvScore=0; hud(); document.body.classList.add('playing');
+  const L=LEVELS[S.lv];
+  render(`
+   <div class="card">
+     <p class="eyebrow">Level ${S.lv+1} of ${LEVELS.length}</p>
+     <div class="big-emoji">${L.icon}</div>
+     <h2 style="font-size:clamp(28px,6vw,40px)">${L.name}</h2>
+     <p class="script" style="font-size:clamp(20px,4.5vw,26px)">${L.sub}</p>
+     <p class="small">${L.qs.length} questions</p>
+     <button class="btn big" data-act="begin" data-primary>Let's go →</button>
+   </div>`);
+}
+function question(){
+  const L=LEVELS[S.lv], Q=L.qs[S.qi];
+  const order=shuffle(Q.o.map((t,i)=>({t,i})));
+  S.cur={Q,order,locked:false};
+  hud();
+  render(`
+   <div class="card">
+     <div class="qmeta"><span>${L.icon} ${L.name}</span><span>Question ${S.qi+1} / ${L.qs.length}</span></div>
+     <h2 class="qtext">${Q.q}</h2>
+     <div class="opts">
+       ${order.map((o,k)=>`<button class="opt" data-k="${k}"><span class="badge">${LET[k]}</span><span>${o.t}</span></button>`).join('')}
+     </div>
+     <div class="fb" id="fb"></div>
+     <button class="btn" id="next" data-act="next" hidden>${S.qi===L.qs.length-1?'Finish level ✓':'Next →'}</button>
+   </div>`);
+}
+function answer(btn){
+  const c=S.cur; if(!c||c.locked) return; c.locked=true;
+  const {Q,order}=c, idx=+btn.dataset.k, ok = Q.all || order[idx].i===0;
+  stage.querySelectorAll('.opt').forEach((b,k)=>{
+    b.disabled=true; const good = Q.all || order[k].i===0;
+    if(good) b.classList.add('correct'); else if(k===idx) b.classList.add('wrong'); else b.classList.add('dim');
+  });
+  S.done++;
+  if(ok){ S.score++; S.lvScore++; S.streak++; } else S.streak=0;
+  let msg = ok ? (Q.right||rand(RIGHT)) : (Q.wrong||rand(WRONG));
+  if(ok && S.streak>=3) msg += `  🔥 ${S.streak} in a row!`;
+  const fb=$('#fb'); fb.textContent=msg; fb.className='fb show '+(ok?'ok':'no');
+  const r=btn.getBoundingClientRect(), x=r.left+r.width/2, y=r.top+r.height/2;
+  if(ok){ sfx.good(); burst(x,y,['💙','✨','💫','⭐','🩵'],18); pulseScore(); }
+  else { sfx.oops(); burst(x,y,['🫶','🥺','💫'],7); }
+  hud();
+  $('#next').hidden=false;
+}
+function nextQ(){
+  const L=LEVELS[S.lv]; S.qi++;
+  if(S.qi>=L.qs.length) levelDone(); else question();
+}
+function levelDone(){
+  const L=LEVELS[S.lv], n=L.qs.length, ratio=S.lvScore/n;
+  const line = ratio===1?L.done[0]:ratio>=.5?L.done[1]:L.done[2];
+  const last = S.lv===LEVELS.length-1;
+  sfx.level(); confetti(2);
+  render(`
+   <div class="card">
+     <div class="big-emoji">${ratio===1?'🌟':'💫'}</div>
+     <h2>Level ${S.lv+1} complete!</h2>
+     <p class="script" style="font-size:34px">${S.lvScore} / ${n}</p>
+     <p>${line}</p>
+     <button class="btn big" data-act="${last?'final':'nextlevel'}" data-primary>${last?'See my final score ✨':'Next level →'}</button>
+   </div>`);
+}
+function finalScreen(){
+  const ratio=S.score/TOTAL, pct=Math.round(ratio*100);
+  const title = ratio===1?"Soulmate Certified 💫":ratio>=.75?"Wifeey knows her slave well 😌":ratio>=.5?"Cute & almost there 🌙":"Honorary Slave Whisperer 🫶";
+  const line = ratio===1?"Perfect score. I'm not even surprised.":ratio>=.75?"So close to perfect! I'm impressed.":ratio>=.5?"A solid effort, and I loved every second.":"Rematch with cuddles? I'll go easy on you 😘";
+  sfx.level(); confetti(3);
+  render(`
+   <div class="card">
+     <p class="eyebrow">Final score</p>
+     <div class="ring" id="ring"><div><span id="ringNum">0</span></div></div>
+     <p class="script" style="font-size:34px;margin:0">${S.score} / ${TOTAL} correct</p>
+     <h2 style="margin-top:10px">${title}</h2>
+     <p>${line}</p>
+     <p class="small">...but wait. No matter your score, there's a secret waiting for you 🌌</p>
+     <button class="btn big" data-act="secret" data-primary>🔓 Open your secret</button><br>
+     <button class="btn ghost" data-act="replay">Play again 🔁</button>
+   </div>`).then(()=>{
+    const ring=$('#ring'), num=$('#ringNum'); let v=0;
+    const tick=()=>{ v+=Math.max(1,Math.round((pct-v)/8)); if(v>pct)v=pct; ring.style.setProperty('--p',v); num.textContent=v+'%'; if(v<pct) setTimeout(tick,35); };
+    tick();
+  });
+}
+
+/* ---------- Secret ending ---------- */
+async function secretEnding(){
+  const tok=++endTok;
+  document.body.classList.remove('playing'); document.body.classList.add('ending');
+  stopHearts(); initAudio();
+  await render(`
+   <div class="endwrap">
+     <p id="l1">Well, you might not have gotten every answer right...</p>
+     <p id="l2">But there's one thing I know for sure.</p>
+     <p id="l3" class="last">I'd still choose you in every version of this little game.</p>
+   </div>
+   <button class="skip" data-act="skip">skip ›</button>`);
+  if(tok!==endTok) return;
+  startPad();
+  const seq=[['#l1',900],['#l2',3800],['#l3',3800]];
+  for(const [sel,wait] of seq){
+    await sleep(wait); if(tok!==endTok) return;
+    const el=$(sel); if(!el) return; el.classList.add('show'); sfx.chime();
+    if(sel==='#l3') startHearts();
+  }
+  await sleep(6500); if(tok!==endTok) return;
+  showLetter(tok);
+}
+async function showLetter(tok){
+  if(tok===undefined) tok=++endTok;
+  if(tok!==endTok) return;
+  startHearts(); if(!padTimer) startPad();
+  let d=.3;
+  const paras=LETTER.paras.map(p=>{ const h=`<p class="l" style="animation-delay:${d}s">${p}</p>`; d+=1.5; return h; }).join('');
+  const key=`<p class="l key" style="animation-delay:${d}s">${LETTER.key}</p>`; d+=1.8;
+  const sign=`<p class="l sign" style="animation-delay:${d}s">${LETTER.sign}</p>`; d+=1.6;
+  await render(`
+   <div class="card letter">
+     <h2>${LETTER.title}</h2>
+     <div class="date">${LETTER.date}</div>
+     ${paras}${key}${sign}
+     <div class="btnrow" style="animation-delay:${d}s">
+       <button class="btn ghost" data-act="replayEnding">Watch the ending again 🌙</button>
+       <button class="btn" data-act="replay">Play again 🔁</button>
+     </div>
+   </div>`);
+  sfx.level(); confetti(3);
+}
+
+/* ---------- Flow ---------- */
+function resetGame(){
+  endTok++; stopHearts(); stopPad();
+  document.body.classList.remove('ending');
+  S={lv:0,qi:0,score:0,lvScore:0,streak:0,done:0,cur:null};
+  hud(); levelIntro();
+}
+const actions = {
+  start(){ initAudio(); sfx.click(); resetGame(); },
+  begin(){ sfx.click(); question(); },
+  next(){ sfx.click(); nextQ(); },
+  nextlevel(){ sfx.click(); S.lv++; levelIntro(); },
+  final(){ sfx.click(); finalScreen(); },
+  secret(){ sfx.click(); secretEnding(); },
+  skip(){ sfx.click(); showLetter(); },
+  replay(){ sfx.click(); resetGame(); },
+  replayEnding(){ sfx.click(); secretEnding(); }
+};
+let lock=false;
+stage.addEventListener('click',e=>{
+  const o=e.target.closest('.opt'); if(o){ answer(o); return; }
+  const b=e.target.closest('[data-act]'); if(!b||lock) return;
+  lock=true; setTimeout(()=>lock=false,450);
+  const fn=actions[b.dataset.act]; if(fn) fn();
+});
+document.body.addEventListener('click',e=>{
+  const b=e.target.closest('.skip'); if(b && !stage.contains(b)){ actions.skip(); }
+});
+window.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    const n=document.querySelector('#next:not([hidden])') || stage.querySelector('[data-primary]');
+    if(n){ e.preventDefault(); n.click(); }
+    return;
+  }
+  const k={'1':0,'2':1,'3':2,'4':3,a:0,b:1,c:2,d:3}[e.key.toLowerCase()];
+  if(k!==undefined){ const o=stage.querySelectorAll('.opt')[k]; if(o&&!o.disabled) o.click(); }
+});
+
+intro();
+})();
+</script>
+</body>
+</html>
